@@ -4,7 +4,7 @@ require "bundler/setup"
 require "rspec"
 require "openfeature/go-feature-flag/provider"
 require "openfeature/go-feature-flag/options"
-require "openfeature/go-feature-flag/goff_api"
+require "openfeature/go-feature-flag/evaluators/remote"
 require "open_feature/sdk"
 require "webmock/rspec"
 

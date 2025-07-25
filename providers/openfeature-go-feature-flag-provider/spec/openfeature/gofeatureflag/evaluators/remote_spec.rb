@@ -1,6 +1,6 @@
 require "spec_helper"
 
-RSpec.describe OpenFeature::GoFeatureFlag::GoFeatureFlagApi do
+RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
   subject(:goff_api) do
     options = OpenFeature::GoFeatureFlag::Options.new(endpoint: "http://localhost:1031")
     described_class.new(options: options)
@@ -21,7 +21,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::GoFeatureFlagApi do
         .to_return(status: 429)
 
       expect {
-        goff_api.evaluate_ofrep_api(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::RateLimited)
     end
 
@@ -30,7 +30,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::GoFeatureFlagApi do
         .to_return(status: 401)
 
       expect {
-        goff_api.evaluate_ofrep_api(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::UnauthorizedError)
     end
 
@@ -39,7 +39,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::GoFeatureFlagApi do
         .to_return(status: 403)
 
       expect {
-        goff_api.evaluate_ofrep_api(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::UnauthorizedError)
     end
 
@@ -48,7 +48,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::GoFeatureFlagApi do
         .to_return(status: 404)
 
       expect {
-        goff_api.evaluate_ofrep_api(flag_key: "does-not-exists", evaluation_context: default_evaluation_context)
+        goff_api.evaluate(flag_key: "does-not-exists", evaluation_context: default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::FlagNotFoundError)
     end
 
@@ -57,7 +57,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::GoFeatureFlagApi do
         .to_return(status: 500)
 
       expect {
-        goff_api.evaluate_ofrep_api(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::InternalServerError)
     end
 
@@ -70,7 +70,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::GoFeatureFlagApi do
             error_details: "expected type: boolean, got: string"
           }.to_json)
 
-      got = goff_api.evaluate_ofrep_api(flag_key: "double_key", evaluation_context: default_evaluation_context)
+      got = goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
       want = OpenFeature::GoFeatureFlag::OfrepApiResponse.new(
         key: "double_key",
         value: nil,
@@ -94,7 +94,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::GoFeatureFlagApi do
             variant: "variantA"
           }.to_json)
 
-      got = goff_api.evaluate_ofrep_api(flag_key: "double_key", evaluation_context: default_evaluation_context)
+      got = goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
       want = OpenFeature::GoFeatureFlag::OfrepApiResponse.new(
         key: "double_key",
         value: 1.15,
@@ -118,7 +118,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::GoFeatureFlagApi do
           }.to_json)
 
       expect {
-        goff_api.evaluate_ofrep_api(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::ParseError)
     end
 
@@ -133,7 +133,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::GoFeatureFlagApi do
           }.to_json)
 
       expect {
-        goff_api.evaluate_ofrep_api(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::ParseError)
     end
 
@@ -148,7 +148,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::GoFeatureFlagApi do
           }.to_json)
 
       expect {
-        goff_api.evaluate_ofrep_api(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::ParseError)
     end
 
@@ -163,7 +163,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::GoFeatureFlagApi do
           }.to_json)
 
       expect {
-        goff_api.evaluate_ofrep_api(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::ParseError)
     end
 
@@ -175,7 +175,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::GoFeatureFlagApi do
           }.to_json)
 
       expect {
-        goff_api.evaluate_ofrep_api(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::ParseError)
     end
 
@@ -187,7 +187,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::GoFeatureFlagApi do
           }.to_json)
 
       expect {
-        goff_api.evaluate_ofrep_api(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::ParseError)
     end
 
@@ -199,7 +199,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::GoFeatureFlagApi do
           }.to_json)
 
       expect {
-        goff_api.evaluate_ofrep_api(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::ParseError)
     end
 
@@ -208,11 +208,11 @@ RSpec.describe OpenFeature::GoFeatureFlag::GoFeatureFlagApi do
         .to_return(status: 429, headers: {"Retry-After" => "10"})
 
       expect {
-        goff_api.evaluate_ofrep_api(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::RateLimited)
 
       expect {
-        goff_api.evaluate_ofrep_api(flag_key: "random_flag", evaluation_context: default_evaluation_context)
+        goff_api.evaluate(flag_key: "random_flag", evaluation_context: default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::RateLimited)
     end
 
@@ -230,13 +230,13 @@ RSpec.describe OpenFeature::GoFeatureFlag::GoFeatureFlagApi do
           }.to_json)
 
       expect {
-        goff_api.evaluate_ofrep_api(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::RateLimited)
 
       sleep(1.1)
 
       expect {
-        goff_api.evaluate_ofrep_api(flag_key: "random_flag", evaluation_context: default_evaluation_context)
+        goff_api.evaluate(flag_key: "random_flag", evaluation_context: default_evaluation_context)
       }.not_to raise_error
     end
 
@@ -245,11 +245,11 @@ RSpec.describe OpenFeature::GoFeatureFlag::GoFeatureFlagApi do
         .to_return(status: 429, headers: {"Retry-After" => (Time.now + 1).httpdate})
 
       expect {
-        goff_api.evaluate_ofrep_api(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::RateLimited)
 
       expect {
-        goff_api.evaluate_ofrep_api(flag_key: "random_flag", evaluation_context: default_evaluation_context)
+        goff_api.evaluate(flag_key: "random_flag", evaluation_context: default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::RateLimited)
     end
 
@@ -267,13 +267,13 @@ RSpec.describe OpenFeature::GoFeatureFlag::GoFeatureFlagApi do
           }.to_json)
 
       expect {
-        goff_api.evaluate_ofrep_api(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::RateLimited)
 
       sleep(1.1)
 
       expect {
-        goff_api.evaluate_ofrep_api(flag_key: "random_flag", evaluation_context: default_evaluation_context)
+        goff_api.evaluate(flag_key: "random_flag", evaluation_context: default_evaluation_context)
       }.not_to raise_error
     end
   end
