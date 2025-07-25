@@ -113,6 +113,7 @@ PLATFORMS
   x86_64-linux-musl
 
 DEPENDENCIES
+  faraday (~> 2.10)
   openfeature-go-feature-flag-provider!
   rake (~> 13.0)
   rspec (~> 3.12.0)
