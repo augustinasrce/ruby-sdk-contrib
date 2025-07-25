@@ -2,7 +2,7 @@
 
 require "bundler/setup"
 require "rspec"
-require "openfeature/go-feature-flag/go_feature_flag_provider"
+require "openfeature/go-feature-flag/provider"
 require "openfeature/go-feature-flag/options"
 require "openfeature/go-feature-flag/goff_api"
 require "open_feature/sdk"
