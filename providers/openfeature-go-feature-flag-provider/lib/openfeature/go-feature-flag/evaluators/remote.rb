@@ -51,10 +51,10 @@ module OpenFeature
         def parse_success_response(json)
           validate_response(json, %w[key value reason variant])
 
-          OpenFeature::GoFeatureFlag::OfrepApiResponse.new(
+          OfrepApiResponse.new(
             value: json["value"],
             key: json["key"],
-            reason: reason_mapper(json["reason"]),
+            reason: ReasonMapper.run(reason_str: json["reason"]),
             variant: json["variant"],
             error_code: nil,
             error_details: nil,
@@ -65,12 +65,12 @@ module OpenFeature
         def parse_error_response(json)
           validate_response(json, %w[key error_code])
 
-          OpenFeature::GoFeatureFlag::OfrepApiResponse.new(
+          OfrepApiResponse.new(
             value: nil,
             key: json["key"],
             reason: SDK::Provider::Reason::ERROR,
             variant: nil,
-            error_code: error_code_mapper(json["error_code"]),
+            error_code: ErrorCodeMapper.run(error_code_str: json["error_code"]),
             error_details: json["error_details"],
             metadata: nil
           )
@@ -92,36 +92,6 @@ module OpenFeature
             # ignore invalid Retry-After header
             nil
           end
-        end
-
-        def reason_mapper(reason_str)
-          reason_str = reason_str.upcase
-          reason_map = {
-            "STATIC" => SDK::Provider::Reason::STATIC,
-            "DEFAULT" => SDK::Provider::Reason::DEFAULT,
-            "TARGETING_MATCH" => SDK::Provider::Reason::TARGETING_MATCH,
-            "SPLIT" => SDK::Provider::Reason::SPLIT,
-            "CACHED" => SDK::Provider::Reason::CACHED,
-            "DISABLED" => SDK::Provider::Reason::DISABLED,
-            "UNKNOWN" => SDK::Provider::Reason::UNKNOWN,
-            "STALE" => SDK::Provider::Reason::STALE,
-            "ERROR" => SDK::Provider::Reason::ERROR
-          }
-          reason_map[reason_str] || SDK::Provider::Reason::UNKNOWN
-        end
-
-        def error_code_mapper(error_code_str)
-          error_code_str = error_code_str.upcase
-          error_code_map = {
-            "PROVIDER_NOT_READY" => SDK::Provider::ErrorCode::PROVIDER_NOT_READY,
-            "FLAG_NOT_FOUND" => SDK::Provider::ErrorCode::FLAG_NOT_FOUND,
-            "PARSE_ERROR" => SDK::Provider::ErrorCode::PARSE_ERROR,
-            "TYPE_MISMATCH" => SDK::Provider::ErrorCode::TYPE_MISMATCH,
-            "TARGETING_KEY_MISSING" => SDK::Provider::ErrorCode::TARGETING_KEY_MISSING,
-            "INVALID_CONTEXT" => SDK::Provider::ErrorCode::INVALID_CONTEXT,
-            "GENERAL" => SDK::Provider::ErrorCode::GENERAL
-          }
-          error_code_map[error_code_str] || SDK::Provider::ErrorCode::GENERAL
         end
       end
     end
