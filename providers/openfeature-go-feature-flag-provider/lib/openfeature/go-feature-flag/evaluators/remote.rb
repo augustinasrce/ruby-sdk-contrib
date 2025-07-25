@@ -11,91 +11,87 @@ module OpenFeature
   module GoFeatureFlag
     module Evaluators
       class Remote
-        attr_reader :options
 
-        def initialize(options: {})
-          @options = options
-          @faraday_connection = Faraday.new(
-            url: @options.endpoint,
-            headers: { "Content-Type" => "application/json" }.merge(@options.custom_headers || {})
-          )
+        def initialize(api_client:)
+          @api_client = api_client
         end
 
         def evaluate(flag_key:, evaluation_context:)
-          unless @retry_after.nil?
-            if Time.now < @retry_after
-              raise OpenFeature::GoFeatureFlag::RateLimited.new(nil)
-            else
-              @retry_after = nil
-            end
-          end
-
-          evaluation_context = OpenFeature::SDK::EvaluationContext.new if evaluation_context.nil?
-          # replace targeting_key by targetingKey
-          evaluation_context.fields["targetingKey"] = evaluation_context.targeting_key
-          evaluation_context.fields.delete("targeting_key")
-
-          response = @faraday_connection.post("/ofrep/v1/evaluate/flags/#{flag_key}") do |req|
-            req.body = { context: evaluation_context.fields }.to_json
-          end
-
-          case response.status
-          when 200
-            parse_success_response(response)
-          when 400
-            parse_error_response(response)
-          when 401, 403
-            raise OpenFeature::GoFeatureFlag::UnauthorizedError.new(response)
-          when 404
-            raise OpenFeature::GoFeatureFlag::FlagNotFoundError.new(response, flag_key)
-          when 429
-            parse_retry_later_header(response)
-            raise OpenFeature::GoFeatureFlag::RateLimited.new(response)
-          else
-            raise OpenFeature::GoFeatureFlag::InternalServerError.new(response)
-          end
+          response = @api_client.ofrep_evaluate(flag_key, evaluation_context)
+          handle_response(response, flag_key)
         end
 
         private
 
-        def parse_error_response(response)
-          required_keys = %w[key error_code]
-          parsed = JSON.parse(response.body)
-
-          missing_keys = required_keys - parsed.keys
-          unless missing_keys.empty?
-            raise OpenFeature::GoFeatureFlag::ParseError.new(response)
+        def handle_response(response, flag_key)
+          case response.status
+          when 200
+            parse_success_response(JSON.parse(response.body))
+          when 400
+            parse_error_response(JSON.parse(response.body))
+          when 401, 403
+            raise Errors::UnauthorizedError.new(response)
+          when 404
+            raise Errors::FlagNotFoundError.new(response, flag_key)
+          when 429
+            parse_retry_later_header(response)
+            raise Errors::RateLimited.new(response)
+          else
+            raise Errors::InternalServerError.new(response)
           end
+        end
+
+        def validate_response(json, required_keys)
+          missing_keys = required_keys - json.keys
+          unless missing_keys.empty?
+            raise Errors::ParseError.new(json)
+          end
+        end
+
+        def parse_success_response(json)
+          validate_response(json, %w[key value reason variant])
+
+          OpenFeature::GoFeatureFlag::OfrepApiResponse.new(
+            value: json["value"],
+            key: json["key"],
+            reason: reason_mapper(json["reason"]),
+            variant: json["variant"],
+            error_code: nil,
+            error_details: nil,
+            metadata: json["metadata"]
+          )
+        end
+
+        def parse_error_response(json)
+          validate_response(json, %w[key error_code])
 
           OpenFeature::GoFeatureFlag::OfrepApiResponse.new(
             value: nil,
-            key: parsed["key"],
+            key: json["key"],
             reason: SDK::Provider::Reason::ERROR,
             variant: nil,
-            error_code: error_code_mapper(parsed["error_code"]),
-            error_details: parsed["error_details"],
+            error_code: error_code_mapper(json["error_code"]),
+            error_details: json["error_details"],
             metadata: nil
           )
         end
 
-        def parse_success_response(response)
-          required_keys = %w[key value reason variant]
-          parsed = JSON.parse(response.body)
+        def parse_retry_later_header(response)
+          retry_after = response["Retry-After"]
+          return nil if retry_after.nil?
 
-          missing_keys = required_keys - parsed.keys
-          unless missing_keys.empty?
-            raise OpenFeature::GoFeatureFlag::ParseError.new(response)
+          begin
+            @api_client.retry_after = if /^\d+$/.match?(retry_after)
+                                    # Retry-After is in seconds
+                                    Time.now + Integer(retry_after)
+                                  else
+                                    # Retry-After is an HTTP-date
+                                    Time.httpdate(retry_after)
+                                  end
+          rescue ArgumentError
+            # ignore invalid Retry-After header
+            nil
           end
-
-          OpenFeature::GoFeatureFlag::OfrepApiResponse.new(
-            value: parsed["value"],
-            key: parsed["key"],
-            reason: reason_mapper(parsed["reason"]),
-            variant: parsed["variant"],
-            error_code: nil,
-            error_details: nil,
-            metadata: parsed["metadata"]
-          )
         end
 
         def reason_mapper(reason_str)
@@ -126,24 +122,6 @@ module OpenFeature
             "GENERAL" => SDK::Provider::ErrorCode::GENERAL
           }
           error_code_map[error_code_str] || SDK::Provider::ErrorCode::GENERAL
-        end
-
-        def parse_retry_later_header(response)
-          retry_after = response["Retry-After"]
-          return nil if retry_after.nil?
-
-          begin
-            @retry_after = if /^\d+$/.match?(retry_after)
-                             # Retry-After is in seconds
-                             Time.now + Integer(retry_after)
-                           else
-                             # Retry-After is an HTTP-date
-                             Time.httpdate(retry_after)
-                           end
-          rescue ArgumentError
-            # ignore invalid Retry-After header
-            nil
-          end
         end
       end
     end

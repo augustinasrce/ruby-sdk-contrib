@@ -1,9 +1,10 @@
 require "spec_helper"
 
 RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
-  subject(:goff_api) do
+  subject(:remote) do
     options = OpenFeature::GoFeatureFlag::Options.new(endpoint: "http://localhost:1031")
-    described_class.new(options: options)
+    api_client = OpenFeature::GoFeatureFlag::ApiClient.new(options: options)
+    described_class.new(api_client: api_client)
   end
 
   let(:default_evaluation_context) do
@@ -21,8 +22,8 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
         .to_return(status: 429)
 
       expect {
-        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
-      }.to raise_error(OpenFeature::GoFeatureFlag::RateLimited)
+        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+      }.to raise_error(OpenFeature::GoFeatureFlag::Errors::RateLimited)
     end
 
     it "should raise an error if not authorized (401)" do
@@ -30,8 +31,8 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
         .to_return(status: 401)
 
       expect {
-        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
-      }.to raise_error(OpenFeature::GoFeatureFlag::UnauthorizedError)
+        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+      }.to raise_error(OpenFeature::GoFeatureFlag::Errors::UnauthorizedError)
     end
 
     it "should raise an error if not authorized (403)" do
@@ -39,8 +40,8 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
         .to_return(status: 403)
 
       expect {
-        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
-      }.to raise_error(OpenFeature::GoFeatureFlag::UnauthorizedError)
+        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+      }.to raise_error(OpenFeature::GoFeatureFlag::Errors::UnauthorizedError)
     end
 
     it "should raise an error if flag not found (404)" do
@@ -48,8 +49,8 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
         .to_return(status: 404)
 
       expect {
-        goff_api.evaluate(flag_key: "does-not-exists", evaluation_context: default_evaluation_context)
-      }.to raise_error(OpenFeature::GoFeatureFlag::FlagNotFoundError)
+        remote.evaluate(flag_key: "does-not-exists", evaluation_context: default_evaluation_context)
+      }.to raise_error(OpenFeature::GoFeatureFlag::Errors::FlagNotFoundError)
     end
 
     it "should raise an error if unknown http code (500)" do
@@ -57,8 +58,8 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
         .to_return(status: 500)
 
       expect {
-        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
-      }.to raise_error(OpenFeature::GoFeatureFlag::InternalServerError)
+        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+      }.to raise_error(OpenFeature::GoFeatureFlag::Errors::InternalServerError)
     end
 
     it "should return an error response if 400" do
@@ -70,7 +71,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
             error_details: "expected type: boolean, got: string"
           }.to_json)
 
-      got = goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+      got = remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
       want = OpenFeature::GoFeatureFlag::OfrepApiResponse.new(
         key: "double_key",
         value: nil,
@@ -88,13 +89,13 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
         .to_return(status: 200, body:
           {
             key: "double_key",
-            metadata: {"website" => "https://gofeatureflag.org"},
+            metadata: { "website" => "https://gofeatureflag.org" },
             value: 1.15,
             reason: "TARGETING_MATCH",
             variant: "variantA"
           }.to_json)
 
-      got = goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+      got = remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
       want = OpenFeature::GoFeatureFlag::OfrepApiResponse.new(
         key: "double_key",
         value: 1.15,
@@ -102,7 +103,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
         variant: "variantA",
         error_code: nil,
         error_details: nil,
-        metadata: {"website" => "https://gofeatureflag.org"}
+        metadata: { "website" => "https://gofeatureflag.org" }
       )
       expect(got).to eql(want)
     end
@@ -112,14 +113,14 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
         .to_return(status: 200, body:
           {
             key: "double_key",
-            metadata: {"website" => "https://gofeatureflag.org"},
+            metadata: { "website" => "https://gofeatureflag.org" },
             reason: "TARGETING_MATCH",
             variant: "variantA"
           }.to_json)
 
       expect {
-        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
-      }.to raise_error(OpenFeature::GoFeatureFlag::ParseError)
+        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+      }.to raise_error(OpenFeature::GoFeatureFlag::Errors::ParseError)
     end
 
     it "should raise an error if 200 and json does not contains the required keys (missing key)" do
@@ -127,14 +128,14 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
         .to_return(status: 200, body:
           {
             value: 1.15,
-            metadata: {"website" => "https://gofeatureflag.org"},
+            metadata: { "website" => "https://gofeatureflag.org" },
             reason: "TARGETING_MATCH",
             variant: "variantA"
           }.to_json)
 
       expect {
-        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
-      }.to raise_error(OpenFeature::GoFeatureFlag::ParseError)
+        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+      }.to raise_error(OpenFeature::GoFeatureFlag::Errors::ParseError)
     end
 
     it "should raise an error if 200 and json does not contains the required keys (missing reason)" do
@@ -142,14 +143,14 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
         .to_return(status: 200, body:
           {
             value: 1.15,
-            metadata: {"website" => "https://gofeatureflag.org"},
+            metadata: { "website" => "https://gofeatureflag.org" },
             key: "double_key",
             variant: "variantA"
           }.to_json)
 
       expect {
-        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
-      }.to raise_error(OpenFeature::GoFeatureFlag::ParseError)
+        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+      }.to raise_error(OpenFeature::GoFeatureFlag::Errors::ParseError)
     end
 
     it "should raise an error if 200 and json does not contains the required keys (missing variant)" do
@@ -157,14 +158,14 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
         .to_return(status: 200, body:
           {
             value: 1.15,
-            metadata: {"website" => "https://gofeatureflag.org"},
+            metadata: { "website" => "https://gofeatureflag.org" },
             key: "double_key",
             reason: "TARGETING_MATCH"
           }.to_json)
 
       expect {
-        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
-      }.to raise_error(OpenFeature::GoFeatureFlag::ParseError)
+        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+      }.to raise_error(OpenFeature::GoFeatureFlag::Errors::ParseError)
     end
 
     it "should raise an error if 400 and json does not contains the required keys (missing key)" do
@@ -175,8 +176,8 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
           }.to_json)
 
       expect {
-        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
-      }.to raise_error(OpenFeature::GoFeatureFlag::ParseError)
+        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+      }.to raise_error(OpenFeature::GoFeatureFlag::Errors::ParseError)
     end
 
     it "should raise an error if 400 and json does not contains the required keys (missing error_code)" do
@@ -187,8 +188,8 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
           }.to_json)
 
       expect {
-        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
-      }.to raise_error(OpenFeature::GoFeatureFlag::ParseError)
+        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+      }.to raise_error(OpenFeature::GoFeatureFlag::Errors::ParseError)
     end
 
     it "should raise an error if 400 and json does not contains the required keys (missing error_code)" do
@@ -199,81 +200,81 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
           }.to_json)
 
       expect {
-        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
-      }.to raise_error(OpenFeature::GoFeatureFlag::ParseError)
+        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+      }.to raise_error(OpenFeature::GoFeatureFlag::Errors::ParseError)
     end
 
     it "should not be able to call the API again if rate-limited (with retry-after int)" do
       stub_request(:post, "http://localhost:1031/ofrep/v1/evaluate/flags/double_key")
-        .to_return(status: 429, headers: {"Retry-After" => "10"})
+        .to_return(status: 429, headers: { "Retry-After" => "10" })
 
       expect {
-        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
-      }.to raise_error(OpenFeature::GoFeatureFlag::RateLimited)
+        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+      }.to raise_error(OpenFeature::GoFeatureFlag::Errors::RateLimited)
 
       expect {
-        goff_api.evaluate(flag_key: "random_flag", evaluation_context: default_evaluation_context)
-      }.to raise_error(OpenFeature::GoFeatureFlag::RateLimited)
+        remote.evaluate(flag_key: "random_flag", evaluation_context: default_evaluation_context)
+      }.to raise_error(OpenFeature::GoFeatureFlag::Errors::RateLimited)
     end
 
     it "should be able to call the API again if we wait after the retry-after (as int)" do
       stub_request(:post, "http://localhost:1031/ofrep/v1/evaluate/flags/double_key")
-        .to_return(status: 429, headers: {"Retry-After" => "1"})
+        .to_return(status: 429, headers: { "Retry-After" => "1" })
       stub_request(:post, "http://localhost:1031/ofrep/v1/evaluate/flags/random_flag")
         .to_return(status: 200, body:
           {
             value: 1.15,
-            metadata: {"website" => "https://gofeatureflag.org"},
+            metadata: { "website" => "https://gofeatureflag.org" },
             key: "double_key",
             reason: "TARGETING_MATCH",
             variant: "variantA"
           }.to_json)
 
       expect {
-        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
-      }.to raise_error(OpenFeature::GoFeatureFlag::RateLimited)
+        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+      }.to raise_error(OpenFeature::GoFeatureFlag::Errors::RateLimited)
 
       sleep(1.1)
 
       expect {
-        goff_api.evaluate(flag_key: "random_flag", evaluation_context: default_evaluation_context)
+        remote.evaluate(flag_key: "random_flag", evaluation_context: default_evaluation_context)
       }.not_to raise_error
     end
 
     it "should not be able to call the API again if rate-limited (with retry-after date)" do
       stub_request(:post, "http://localhost:1031/ofrep/v1/evaluate/flags/double_key")
-        .to_return(status: 429, headers: {"Retry-After" => (Time.now + 1).httpdate})
+        .to_return(status: 429, headers: { "Retry-After" => (Time.now + 1).httpdate })
 
       expect {
-        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
-      }.to raise_error(OpenFeature::GoFeatureFlag::RateLimited)
+        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+      }.to raise_error(OpenFeature::GoFeatureFlag::Errors::RateLimited)
 
       expect {
-        goff_api.evaluate(flag_key: "random_flag", evaluation_context: default_evaluation_context)
-      }.to raise_error(OpenFeature::GoFeatureFlag::RateLimited)
+        remote.evaluate(flag_key: "random_flag", evaluation_context: default_evaluation_context)
+      }.to raise_error(OpenFeature::GoFeatureFlag::Errors::RateLimited)
     end
 
     it "should be able to call the API again if we wait after the retry-after (as date)" do
       stub_request(:post, "http://localhost:1031/ofrep/v1/evaluate/flags/double_key")
-        .to_return(status: 429, headers: {"Retry-After" => (Time.now + 1).httpdate})
+        .to_return(status: 429, headers: { "Retry-After" => (Time.now + 1).httpdate })
       stub_request(:post, "http://localhost:1031/ofrep/v1/evaluate/flags/random_flag")
         .to_return(status: 200, body:
           {
             value: 1.15,
-            metadata: {"website" => "https://gofeatureflag.org"},
+            metadata: { "website" => "https://gofeatureflag.org" },
             key: "double_key",
             reason: "TARGETING_MATCH",
             variant: "variantA"
           }.to_json)
 
       expect {
-        goff_api.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
-      }.to raise_error(OpenFeature::GoFeatureFlag::RateLimited)
+        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+      }.to raise_error(OpenFeature::GoFeatureFlag::Errors::RateLimited)
 
       sleep(1.1)
 
       expect {
-        goff_api.evaluate(flag_key: "random_flag", evaluation_context: default_evaluation_context)
+        remote.evaluate(flag_key: "random_flag", evaluation_context: default_evaluation_context)
       }.not_to raise_error
     end
   end

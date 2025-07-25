@@ -3,8 +3,10 @@
 require "bundler/setup"
 require "rspec"
 require "openfeature/go-feature-flag/provider"
+require "openfeature/go-feature-flag/api_client"
 require "openfeature/go-feature-flag/options"
 require "openfeature/go-feature-flag/evaluators/remote"
+require "openfeature/go-feature-flag/error/errors"
 require "open_feature/sdk"
 require "webmock/rspec"
 
