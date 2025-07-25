@@ -16,6 +16,18 @@ module OpenFeature
         end
       end
 
+      class FlagConfigurationNotFoundError < StandardError
+        attr_reader :response, :error_code, :error_message
+
+        def initialize(response)
+          error_message = "Flag configuration endpoint not found"
+          @response = response
+          @error_code = SDK::Provider::ErrorCode::FLAG_NOT_FOUND
+          @error_message = error_message
+          super(error_message)
+        end
+      end
+
       class InternalServerError < StandardError
         attr_reader :response, :error_code, :error_message
 
