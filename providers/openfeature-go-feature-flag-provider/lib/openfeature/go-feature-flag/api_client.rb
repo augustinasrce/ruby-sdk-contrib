@@ -30,7 +30,7 @@ module OpenFeature
         rate_limiter
 
         @faraday_connection.post("/v1/flag/configuration") do |req|
-          req.body = { flags: flags }.to_json unless flags.empty?
+          req.body = { flags: flags }.to_json unless flags.nil?
           req.headers['If-None-Match'] = etag unless etag.nil?
         end
       end
