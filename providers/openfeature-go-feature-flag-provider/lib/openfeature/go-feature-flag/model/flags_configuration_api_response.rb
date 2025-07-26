@@ -1,3 +1,8 @@
+# frozen_string_literal: true
+
+
+require "time"
+
 module OpenFeature
   module GoFeatureFlag
     class FlagsConfigurationApiResponse
@@ -7,22 +12,22 @@ module OpenFeature
         @etag = parse_etag_header(response)
         @last_modified = parse_last_modified_header(response)
         body = JSON.parse(response.body)
-        @flags = body['flags']
-        @evaluation_context_enrichment = body['evaluationContextEnrichment']
+        @flags = body["flags"]
+        @evaluation_context_enrichment = body["evaluationContextEnrichment"]
       end
 
       private
 
       def parse_etag_header(response)
         etag = response["Etag"]
-        return nil if etag.nil?
-
-        @etag = etag
+        @etag = etag unless etag.nil?
       end
 
       def parse_last_modified_header(response)
-        str = response['Last-Modified']
+        str = response["Last-Modified"]
         @last_modified = Time.parse(str) unless str.nil?
+      rescue ArgumentError
+        # Ignored
       end
     end
   end

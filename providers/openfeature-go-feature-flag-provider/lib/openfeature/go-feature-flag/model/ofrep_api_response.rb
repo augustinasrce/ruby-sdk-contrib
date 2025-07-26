@@ -1,3 +1,6 @@
+# frozen_string_literal: true
+
+
 module OpenFeature
   module GoFeatureFlag
     class OfrepApiResponse
