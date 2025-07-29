@@ -16,6 +16,18 @@ module OpenFeature
         end
       end
 
+      class ImpossibleToRetrieveConfiguration < StandardError
+        attr_reader :response, :error_code, :error_message
+
+        def initialize(response, msg)
+          error_message = "Impossible to retrieve flags configuration: #{msg}"
+          @response = response
+          @error_code = SDK::Provider::ErrorCode::PARSE_ERROR
+          @error_message = error_message
+          super(error_message)
+        end
+      end
+
       class FlagConfigurationNotFoundError < StandardError
         attr_reader :response, :error_code, :error_message
 
