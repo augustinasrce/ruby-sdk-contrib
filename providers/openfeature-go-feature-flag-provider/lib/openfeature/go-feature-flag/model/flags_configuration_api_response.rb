@@ -14,6 +14,8 @@ module OpenFeature
         body = JSON.parse(response.body)
         @flags = body["flags"]
         @evaluation_context_enrichment = body["evaluationContextEnrichment"]
+      rescue JSON::ParserError => e
+        raise Errors::ImpossibleToRetrieveConfiguration.new(response, e)
       end
 
       private
