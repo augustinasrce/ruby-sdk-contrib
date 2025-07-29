@@ -10,7 +10,7 @@ module OpenFeature
 
       def initialize(endpoint: nil, headers: {}, exporter_metadata: {})
         validate_endpoint(endpoint: endpoint)
-        @endpoint = endpoint
+        @endpoint = endpoint || "http://localhost:1031"
         @custom_headers = headers
         @exporter_metadata = exporter_metadata
       end
