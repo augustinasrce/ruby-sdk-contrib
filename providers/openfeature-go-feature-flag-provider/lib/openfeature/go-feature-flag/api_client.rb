@@ -2,6 +2,7 @@
 
 require "net/http"
 require "faraday"
+require "faraday/net_http_persistent"
 require_relative "error/errors"
 
 module OpenFeature
@@ -9,13 +10,17 @@ module OpenFeature
     class ApiClient
       attr_accessor :retry_after
 
-      def initialize(options: {})
+      def initialize(options: Options.new)
         @options = options
         @retry_after = nil
         @faraday_connection = Faraday.new(
           url: @options.endpoint,
           headers: { "Content-Type" => "application/json" }.merge(@options.custom_headers || {})
-        )
+        ) do |f|
+          f.adapter :net_http_persistent do |http|
+            http.idle_timeout = 30
+          end
+        end
       end
 
       def ofrep_evaluate(flag_key, evaluation_context)
