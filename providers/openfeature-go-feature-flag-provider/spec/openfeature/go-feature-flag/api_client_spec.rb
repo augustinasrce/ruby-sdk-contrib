@@ -1,10 +1,9 @@
 require "spec_helper"
 
-RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
-  subject(:remote) do
+RSpec.describe OpenFeature::GoFeatureFlag::ApiClient do
+  subject(:client) do
     options = OpenFeature::GoFeatureFlag::Options.new(endpoint: "http://localhost:1031")
-    api_client = OpenFeature::GoFeatureFlag::ApiClient.new(options: options)
-    described_class.new(api_client: api_client)
+    described_class.new(options: options)
   end
 
   let(:default_evaluation_context) do
@@ -16,13 +15,13 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
     )
   end
 
-  context "#evaluate" do
+  context "#ofrep_evaluate" do
     it "should raise an error if rate limited" do
       stub_request(:post, "http://localhost:1031/ofrep/v1/evaluate/flags/double_key")
         .to_return(status: 429)
 
       expect {
-        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        client.ofrep_evaluate("double_key", default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::Errors::RateLimited)
     end
 
@@ -31,7 +30,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
         .to_return(status: 401)
 
       expect {
-        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        client.ofrep_evaluate("double_key", default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::Errors::UnauthorizedError)
     end
 
@@ -40,7 +39,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
         .to_return(status: 403)
 
       expect {
-        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        client.ofrep_evaluate("double_key", default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::Errors::UnauthorizedError)
     end
 
@@ -49,7 +48,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
         .to_return(status: 404)
 
       expect {
-        remote.evaluate(flag_key: "does-not-exists", evaluation_context: default_evaluation_context)
+        client.ofrep_evaluate("does-not-exists", default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::Errors::FlagNotFoundError)
     end
 
@@ -58,7 +57,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
         .to_return(status: 500)
 
       expect {
-        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        client.ofrep_evaluate("double_key", default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::Errors::InternalServerError)
     end
 
@@ -71,7 +70,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
             error_details: "expected type: boolean, got: string"
           }.to_json)
 
-      got = remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+      got = client.ofrep_evaluate("double_key", default_evaluation_context)
       want = OpenFeature::GoFeatureFlag::OfrepApiResponse.new(
         key: "double_key",
         value: nil,
@@ -95,7 +94,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
             variant: "variantA"
           }.to_json)
 
-      got = remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+      got = client.ofrep_evaluate("double_key", default_evaluation_context)
       want = OpenFeature::GoFeatureFlag::OfrepApiResponse.new(
         key: "double_key",
         value: 1.15,
@@ -119,7 +118,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
           }.to_json)
 
       expect {
-        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        client.ofrep_evaluate("double_key", default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::Errors::ParseError)
     end
 
@@ -134,7 +133,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
           }.to_json)
 
       expect {
-        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        client.ofrep_evaluate("double_key", default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::Errors::ParseError)
     end
 
@@ -149,7 +148,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
           }.to_json)
 
       expect {
-        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        client.ofrep_evaluate("double_key", default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::Errors::ParseError)
     end
 
@@ -164,7 +163,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
           }.to_json)
 
       expect {
-        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        client.ofrep_evaluate("double_key", default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::Errors::ParseError)
     end
 
@@ -176,7 +175,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
           }.to_json)
 
       expect {
-        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        client.ofrep_evaluate("double_key", default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::Errors::ParseError)
     end
 
@@ -188,7 +187,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
           }.to_json)
 
       expect {
-        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        client.ofrep_evaluate("double_key", default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::Errors::ParseError)
     end
 
@@ -200,7 +199,7 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
           }.to_json)
 
       expect {
-        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        client.ofrep_evaluate("double_key", default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::Errors::ParseError)
     end
 
@@ -209,11 +208,11 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
         .to_return(status: 429, headers: { "Retry-After" => "10" })
 
       expect {
-        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        client.ofrep_evaluate("double_key", default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::Errors::RateLimited)
 
       expect {
-        remote.evaluate(flag_key: "random_flag", evaluation_context: default_evaluation_context)
+        client.ofrep_evaluate("random_flag", default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::Errors::RateLimited)
     end
 
@@ -231,13 +230,13 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
           }.to_json)
 
       expect {
-        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        client.ofrep_evaluate("double_key", default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::Errors::RateLimited)
 
       sleep(1.1)
 
       expect {
-        remote.evaluate(flag_key: "random_flag", evaluation_context: default_evaluation_context)
+        client.ofrep_evaluate("random_flag", default_evaluation_context)
       }.not_to raise_error
     end
 
@@ -246,11 +245,11 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
         .to_return(status: 429, headers: { "Retry-After" => (Time.now + 1).httpdate })
 
       expect {
-        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        client.ofrep_evaluate("double_key", default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::Errors::RateLimited)
 
       expect {
-        remote.evaluate(flag_key: "random_flag", evaluation_context: default_evaluation_context)
+        client.ofrep_evaluate("random_flag", default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::Errors::RateLimited)
     end
 
@@ -268,13 +267,13 @@ RSpec.describe OpenFeature::GoFeatureFlag::Evaluators::Remote do
           }.to_json)
 
       expect {
-        remote.evaluate(flag_key: "double_key", evaluation_context: default_evaluation_context)
+        client.ofrep_evaluate("double_key", default_evaluation_context)
       }.to raise_error(OpenFeature::GoFeatureFlag::Errors::RateLimited)
 
       sleep(1.1)
 
       expect {
-        remote.evaluate(flag_key: "random_flag", evaluation_context: default_evaluation_context)
+        client.ofrep_evaluate("random_flag", default_evaluation_context)
       }.not_to raise_error
     end
   end

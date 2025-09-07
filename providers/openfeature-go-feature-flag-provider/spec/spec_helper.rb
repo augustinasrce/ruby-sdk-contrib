@@ -32,5 +32,3 @@ RSpec.configure do |config|
   config.order = :random
   Kernel.srand config.seed
 end
-
-WebMock.disable_net_connect!(allow_localhost: true)

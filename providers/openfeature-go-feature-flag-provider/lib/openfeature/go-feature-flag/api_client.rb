@@ -8,8 +8,6 @@ require_relative "error/errors"
 module OpenFeature
   module GoFeatureFlag
     class ApiClient
-      attr_accessor :retry_after
-
       def initialize(options: Options.new)
         @options = options
         @retry_after = nil
@@ -26,9 +24,11 @@ module OpenFeature
       def ofrep_evaluate(flag_key, evaluation_context)
         rate_limiter
 
-        @faraday_connection.post("/ofrep/v1/evaluate/flags/#{flag_key}") do |req|
+        response = @faraday_connection.post("/ofrep/v1/evaluate/flags/#{flag_key}") do |req|
           req.body = {context: evaluation_context.fields}.to_json
         end
+
+        handle_evaluation_response response, flag_key
       end
 
       def fetch_flags_configuration(flags: nil, etag: nil)
@@ -128,13 +128,13 @@ module OpenFeature
         return nil if retry_after.nil?
 
         begin
-          @api_client.retry_after = if /^\d+$/.match?(retry_after)
-                                      # Retry-After is in seconds
-                                      Time.now + Integer(retry_after)
-                                    else
-                                      # Retry-After is an HTTP-date
-                                      Time.httpdate(retry_after)
-                                    end
+          @retry_after = if /^\d+$/.match?(retry_after)
+            # Retry-After is in seconds
+            Time.now + Integer(retry_after)
+          else
+            # Retry-After is an HTTP-date
+            Time.httpdate(retry_after)
+          end
         rescue ArgumentError
           # ignore invalid Retry-After header
           nil
