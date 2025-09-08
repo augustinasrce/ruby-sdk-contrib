@@ -27,7 +27,7 @@ module OpenFeature
 
       def parse_last_modified_header(response)
         str = response["Last-Modified"]
-        @last_modified = Time.parse(str) unless str.nil?
+        @last_modified = Time.httpdate(str) unless str.nil?
       rescue ArgumentError
         # Ignored
       end

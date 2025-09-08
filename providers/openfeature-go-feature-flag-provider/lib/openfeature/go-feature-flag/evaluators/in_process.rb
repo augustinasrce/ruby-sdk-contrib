@@ -9,7 +9,7 @@ module OpenFeature
 
         def initialize(api_client:)
           @api_client = api_client
-          response = handle_response(@api_client.fetch_flags_configuration)
+          response = @api_client.fetch_flags_configuration
           @flags = response.flags
           @etag = response.etag
           @last_modified = response.last_modified
